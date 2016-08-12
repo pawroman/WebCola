@@ -80,6 +80,7 @@ module cola {
         backToFront;
         obstacles;
         passableEdges;
+        deadline;
         private avg(a) { return a.reduce((x, y) => x + y) / a.length }
 
         // in the given axis, find sets of leaves overlapping in that axis
@@ -113,6 +114,11 @@ module cola {
 
         // medial axes between node centres and also boundary lines for the grid
         private midPoints(a) {
+            if (a.length === 1) {
+                // fallback
+                return [a[0] - 100, a[0] + 100];
+            }
+
             var gap = a[1] - a[0];
             var mids = [a[0] - gap / 2];
             for (var i = 1; i < a.length; i++) {
@@ -494,7 +500,7 @@ module cola {
                         vi = e[lcs.si + lcs.length];
                         vj = f[lcs.ti + lcs.length];
                     }
-                    if (GridRouter.isLeft(u, vi, vj)) {
+                    if (u !== undefined && GridRouter.isLeft(u, vi, vj)) {
                         edgeOrder.push({ l: j, r: i });
                     } else {
                         edgeOrder.push({ l: i, r: j });
@@ -528,6 +534,11 @@ module cola {
         // find a route between node s and node t
         // returns an array of indices to verts
         route(s: number, t: number): geom.Point[] {
+            if (this.deadline !== undefined &&
+                new Date().getTime() > this.deadline) {
+                throw "timeout";
+            }
+
             var source = this.nodes[<number>s], target = this.nodes[<number>t];
             this.obstacles = this.siblingObstacles(source, target);
 
