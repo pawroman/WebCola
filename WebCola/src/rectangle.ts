@@ -271,7 +271,7 @@ module cola.vpsc {
         var cs = generateConstraints(rs, vs, f, minSep);
         if (gn) {
             vs.forEach(v => { v.cOut = [], v.cIn = [] });
-            cs.forEach(c => { c.left.cOut.push(c), c.right.cIn.push(c) });
+            //cs.forEach(c => { c.left.cOut.push(c), c.right.cIn.push(c) });
             root.groups.forEach(g => {
                 var gapAdjustment = (g.padding - f.getSize(g.bounds)) / 2;
                 g.minVar.cIn.forEach(c => c.gap += gapAdjustment);
@@ -373,6 +373,8 @@ module cola.vpsc {
     }
 
     export function removeOverlaps(rs: Rectangle[]): void {
+        console.log("removeOverlaps", rs);
+
         var vs = rs.map(r => new vpsc.Variable(r.cx()));
         var cs = vpsc.generateXConstraints(rs, vs);
         var solver = new vpsc.Solver(vs, cs);
@@ -413,6 +415,8 @@ module cola.vpsc {
             constraints: any[]= null,
             private avoidOverlaps: boolean = false)
         {
+            console.log("new Projection", nodes);
+
             this.variables = nodes.map((v, i) => {
                 return v.variable = new IndexedVariable(i, 1);
             });
@@ -551,6 +555,8 @@ module cola.vpsc {
         }
 
         private solve(vs: Variable[], cs: Constraint[], starting: number[], desired: number[]) {
+            // console.log("Projection.solve", vs);
+
             var solver = new vpsc.Solver(vs, cs);
             solver.setStartingPositions(starting);
             solver.setDesiredPositions(desired);

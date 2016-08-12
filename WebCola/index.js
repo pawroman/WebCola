@@ -303,6 +303,7 @@ var cola;
                 this.weight = weight;
                 this.scale = scale;
                 this.offset = 0;
+                console.log("new Variable");
             }
             Variable.prototype.dfdv = function () {
                 return 2.0 * this.weight * (this.position() - this.desiredPosition);
@@ -468,6 +469,8 @@ var cola;
         vpsc.Block = Block;
         var Blocks = (function () {
             function Blocks(vs) {
+                // console.log("Construct Blocks");
+                // console.log("vs", vs);
                 this.vs = vs;
                 var n = vs.length;
                 this.list = new Array(n);
@@ -479,8 +482,13 @@ var cola;
             }
             Blocks.prototype.cost = function () {
                 var sum = 0, i = this.list.length;
-                while (i--)
-                    sum += this.list[i].cost();
+                // console.log("cost", i);
+                // console.log("list.length", this.list.length);
+                // console.log("list", this.list);
+                while (i--) {
+                    if (this.list[i])
+                        sum += this.list[i].cost();
+                }
                 return sum;
             };
             Blocks.prototype.insert = function (b) {
@@ -501,7 +509,7 @@ var cola;
                 DEBUG */
                 var last = this.list.length - 1;
                 var swapBlock = this.list[last];
-                this.list.length = last;
+                //this.list.length = last;
                 if (b !== swapBlock) {
                     this.list[b.blockInd] = swapBlock;
                     swapBlock.blockInd = b.blockInd;
@@ -549,11 +557,29 @@ var cola;
                     }
                 });
             };
+            // /* DEBUG
+            // checks b is in the block, and does a sanity check over list index integrity
+            Blocks.prototype.contains = function (b) {
+                var result = false;
+                this.list.forEach(function (bb, i) {
+                    if (bb.blockInd !== i) {
+                        console.error("blocks error, blockInd " + b.blockInd + " found at " + i);
+                        return false;
+                    }
+                    result = result || b === bb;
+                });
+                return result;
+            };
+            Blocks.prototype.toString = function () {
+                return this.list.toString();
+            };
             return Blocks;
         })();
         vpsc.Blocks = Blocks;
         var Solver = (function () {
             function Solver(vs, cs) {
+                //console.log("New solver, cs", cs);
+                // console.log("vs", vs);
                 this.vs = vs;
                 this.cs = cs;
                 this.vs = vs;
@@ -565,8 +591,10 @@ var cola;
                 });
                 this.cs = cs;
                 cs.forEach(function (c) {
-                    c.left.cOut.push(c);
-                    c.right.cIn.push(c);
+                    // c.left.cOut.push(c);
+                    // c.right.cIn.push(c);
+                    // console.log("c left", c.left.cOut);
+                    // console.log("c right", c.right.cIn);
                     /* DEBUG
                                     c.toString = () => c.left + "+" + c.gap + "<=" + c.right + " slack=" + c.slack() + " active=" + c.active;
                     DEBUG */
@@ -1372,7 +1400,7 @@ var cola;
             var cs = generateConstraints(rs, vs, f, minSep);
             if (gn) {
                 vs.forEach(function (v) { v.cOut = [], v.cIn = []; });
-                cs.forEach(function (c) { c.left.cOut.push(c), c.right.cIn.push(c); });
+                //cs.forEach(c => { c.left.cOut.push(c), c.right.cIn.push(c) });
                 root.groups.forEach(function (g) {
                     var gapAdjustment = (g.padding - f.getSize(g.bounds)) / 2;
                     g.minVar.cIn.forEach(function (c) { return c.gap += gapAdjustment; });
@@ -1469,6 +1497,7 @@ var cola;
         }
         vpsc.generateYGroupConstraints = generateYGroupConstraints;
         function removeOverlaps(rs) {
+            console.log("removeOverlaps", rs);
             var vs = rs.map(function (r) { return new vpsc.Variable(r.cx()); });
             var cs = vpsc.generateXConstraints(rs, vs);
             var solver = new vpsc.Solver(vs, cs);
@@ -1500,6 +1529,7 @@ var cola;
                 this.groups = groups;
                 this.rootGroup = rootGroup;
                 this.avoidOverlaps = avoidOverlaps;
+                console.log("new Projection", nodes);
                 this.variables = nodes.map(function (v, i) {
                     return v.variable = new IndexedVariable(i, 1);
                 });
@@ -1622,6 +1652,7 @@ var cola;
                 }
             };
             Projection.prototype.solve = function (vs, cs, starting, desired) {
+                // console.log("Projection.solve", vs);
                 var solver = new vpsc.Solver(vs, cs);
                 solver.setStartingPositions(starting);
                 solver.setDesiredPositions(desired);
@@ -2945,6 +2976,7 @@ var cola;
                 });
             }
         });
+        console.log("Generated constraints", constraints);
         return constraints;
     }
     cola.generateDirectedEdgeConstraints = generateDirectedEdgeConstraints;
@@ -3523,10 +3555,18 @@ var cola;
             this._groups.forEach(function (g) {
                 if (typeof g.padding === "undefined")
                     g.padding = 1;
-                if (typeof g.leaves !== "undefined")
-                    g.leaves.forEach(function (v, i) { (g.leaves[i] = _this._nodes[v]).parent = g; });
-                if (typeof g.groups !== "undefined")
-                    g.groups.forEach(function (gi, i) { (g.groups[i] = _this._groups[gi]).parent = g; });
+                if (typeof g.leaves !== "undefined") {
+                    g.leaves.forEach(function (v, i) {
+                        if (typeof v === 'number')
+                            (g.leaves[i] = _this._nodes[v]).parent = g;
+                    });
+                }
+                if (typeof g.groups !== "undefined") {
+                    g.groups.forEach(function (gi, i) {
+                        if (typeof gi === 'number')
+                            (g.groups[i] = _this._groups[gi]).parent = g;
+                    });
+                }
             });
             this._rootGroup.leaves = this._nodes.filter(function (v) { return typeof v.parent === 'undefined'; });
             this._rootGroup.groups = this._groups.filter(function (g) { return typeof g.parent === 'undefined'; });
@@ -3700,8 +3740,6 @@ var cola;
             if (gridSnapIterations === void 0) { gridSnapIterations = 0; }
             if (keepRunning === void 0) { keepRunning = true; }
             var i, j, n = this.nodes().length, N = n + 2 * this._groups.length, m = this._links.length, w = this._canvasSize[0], h = this._canvasSize[1];
-            if (this._linkLengthCalculator)
-                this._linkLengthCalculator();
             var x = new Array(N), y = new Array(N);
             var G = null;
             var ao = this._avoidOverlaps;
@@ -3712,6 +3750,8 @@ var cola;
                 }
                 x[i] = v.x, y[i] = v.y;
             });
+            if (this._linkLengthCalculator)
+                this._linkLengthCalculator();
             //should we do this to clearly label groups?
             //this._groups.forEach((g, i) => g.groupIndex = i);
             var distances;
@@ -4316,6 +4356,10 @@ var cola;
         };
         // medial axes between node centres and also boundary lines for the grid
         GridRouter.prototype.midPoints = function (a) {
+            if (a.length === 1) {
+                // fallback
+                return [a[0] - 100, a[0] + 100];
+            }
             var gap = a[1] - a[0];
             var mids = [a[0] - gap / 2];
             for (var i = 1; i < a.length; i++) {
@@ -4393,6 +4437,8 @@ var cola;
         //   if leftOf(e1,e2) create constraint s1.x + gap <= s2.x
         //   else if leftOf(e2,e1) create cons. s2.x + gap <= s1.x
         GridRouter.nudgeSegs = function (x, y, routes, segments, leftOf, gap) {
+            console.log("nudgeSegs");
+            console.log("segments", segments);
             var n = segments.length;
             if (n <= 1)
                 return;
@@ -4570,7 +4616,7 @@ var cola;
                         vi = e[lcs.si + lcs.length];
                         vj = f[lcs.ti + lcs.length];
                     }
-                    if (GridRouter.isLeft(u, vi, vj)) {
+                    if (u !== undefined && GridRouter.isLeft(u, vi, vj)) {
                         edgeOrder.push({ l: j, r: i });
                     }
                     else {
@@ -4604,6 +4650,10 @@ var cola;
         // returns an array of indices to verts
         GridRouter.prototype.route = function (s, t) {
             var _this = this;
+            if (this.deadline !== undefined &&
+                new Date().getTime() > this.deadline) {
+                throw "timeout";
+            }
             var source = this.nodes[s], target = this.nodes[t];
             this.obstacles = this.siblingObstacles(source, target);
             var obstacleLookup = {};

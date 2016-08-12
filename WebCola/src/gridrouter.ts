@@ -318,6 +318,9 @@ module cola {
         //   if leftOf(e1,e2) create constraint s1.x + gap <= s2.x
         //   else if leftOf(e2,e1) create cons. s2.x + gap <= s1.x
         static nudgeSegs(x: string, y: string, routes, segments, leftOf, gap: number) {
+            console.log("nudgeSegs");
+            console.log("segments", segments);
+
             var n = segments.length;
             if (n <= 1) return;
             var vs = segments.map(s => new vpsc.Variable(s[0][x]));

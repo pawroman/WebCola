@@ -45,7 +45,9 @@ module cola.vpsc {
         cIn: Constraint[];
         cOut: Constraint[];
 
-        constructor(public desiredPosition: number, public weight: number = 1, public scale: number = 1) {}
+        constructor(public desiredPosition: number, public weight: number = 1, public scale: number = 1) {
+            console.log("new Variable");
+        }
 
         dfdv(): number {
             return 2.0 * this.weight * (this.position() - this.desiredPosition);
@@ -231,6 +233,9 @@ DEBUG */
         private list: Block[];
 
         constructor(public vs: Variable[]) {
+            // console.log("Construct Blocks");
+            // console.log("vs", vs);
+
             var n = vs.length;
             this.list = new Array(n);
             while (n--) {
@@ -242,7 +247,15 @@ DEBUG */
 
         cost(): number {
             var sum = 0, i = this.list.length;
-            while (i--) sum += this.list[i].cost();
+
+            // console.log("cost", i);
+            // console.log("list.length", this.list.length);
+            // console.log("list", this.list);
+
+            while (i--) {
+                if (this.list[i])
+                    sum += this.list[i].cost();
+            }
             return sum;
         }
 
@@ -265,7 +278,7 @@ DEBUG */
 DEBUG */
             var last = this.list.length - 1;
             var swapBlock = this.list[last];
-            this.list.length = last;
+            //this.list.length = last;
             if (b !== swapBlock) {
                 this.list[b.blockInd] = swapBlock;
                 swapBlock.blockInd = b.blockInd;
@@ -323,7 +336,7 @@ DEBUG */
             });
         }
         
-/* DEBUG
+// /* DEBUG
         // checks b is in the block, and does a sanity check over list index integrity
         contains(b: Block): boolean {
             var result = false;
@@ -340,7 +353,7 @@ DEBUG */
         toString(): string {
             return this.list.toString();
         }
-DEBUG */
+// DEBUG */
     }
 
     export class Solver {
@@ -351,6 +364,9 @@ DEBUG */
         static ZERO_UPPERBOUND = -1e-10;
 
         constructor(public vs: Variable[], public cs: Constraint[]) {
+            //console.log("New solver, cs", cs);
+            // console.log("vs", vs);
+
             this.vs = vs;
             vs.forEach(v => {
                 v.cIn = [], v.cOut = [];
@@ -360,8 +376,11 @@ DEBUG */
             });
             this.cs = cs;
             cs.forEach(c => {
-                c.left.cOut.push(c);
-                c.right.cIn.push(c);
+                // c.left.cOut.push(c);
+                // c.right.cIn.push(c);
+
+                // console.log("c left", c.left.cOut);
+                // console.log("c right", c.right.cIn);
 /* DEBUG
                 c.toString = () => c.left + "+" + c.gap + "<=" + c.right + " slack=" + c.slack() + " active=" + c.active;
 DEBUG */
